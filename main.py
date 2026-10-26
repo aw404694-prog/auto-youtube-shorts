@@ -8,83 +8,61 @@ from pathlib import Path
 
 import edge_tts
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent
 HISTORY = ROOT / "story_history.json"
 OUTPUT = ROOT / "oyen_shorts.mp4"
+AUDIO = ROOT / "oyen_voice.mp3"
+SILENT_VIDEO = Path("/tmp/oyen_silent.mp4")
 
 STORIES = [
-    {
-        "id": "butterfly",
-        "title": "Oyen mengejar kupu-kupu",
-        "caption": "Oyen mengejar kupu-kupu!",
-        "voice": "Pagi ini Oyen melihat kupu-kupu yang cantik. "
-                 "Dia mengejarnya dengan penuh semangat. "
-                 "Namun kupu-kupu itu terbang tinggi. "
-                 "Oyen pun belajar bahwa tidak semua hal bisa dikejar."
-    },
-    {
-        "id": "ball",
-        "title": "Bola misterius",
-        "caption": "Siapa yang menggerakkan bola?",
-        "voice": "Oyen menemukan bola merah di lantai. "
-                 "Saat disentuh, bola itu bergerak sendiri. "
-                 "Oyen mundur karena terkejut. "
-                 "Ternyata bola itu menggelinding karena dorongan kecilnya."
-    },
-    {
-        "id": "fish",
-        "title": "Oyen dan ikan",
-        "caption": "Oyen melihat ikan!",
-        "voice": "Oyen melihat ikan berenang di dalam akuarium. "
-                 "Dia mendekat dengan rasa penasaran. "
-                 "Ketika ikan itu bergerak cepat, Oyen ikut bergerak. "
-                 "Hari ini menjadi petualangan yang lucu."
-    },
-    {
-        "id": "gift",
-        "title": "Kotak hadiah",
-        "caption": "Apa isi kotak itu?",
-        "voice": "Di sudut ruangan, Oyen menemukan sebuah kotak. "
-                 "Dia mengendusnya lalu mendorong tutupnya. "
-                 "Di dalamnya ada mainan kecil. "
-                 "Oyen langsung bermain dengan gembira."
-    },
-    {
-        "id": "bird",
-        "title": "Burung di jendela",
-        "caption": "Oyen bertemu burung!",
-        "voice": "Seekor burung hinggap di dekat jendela. "
-                 "Oyen memperhatikannya dengan mata berbinar. "
-                 "Burung itu mengepakkan sayapnya lalu terbang. "
-                 "Oyen masih penasaran dan menatap langit."
-    },
-    {
-        "id": "hat",
-        "title": "Topi Oyen",
-        "caption": "Topi siapa ini?",
-        "voice": "Oyen menemukan topi kecil yang lucu. "
-                 "Dia mencoba mendekatkan kepalanya ke topi itu. "
-                 "Topinya miring dan membuat Oyen terlihat kocak. "
-                 "Petualangan sederhana pun menjadi menyenangkan."
-    },
-    {
-        "id": "shadow",
-        "title": "Bayangan misterius",
-        "caption": "Oyen kaget melihat bayangan!",
-        "voice": "Oyen melihat sesuatu bergerak di dinding. "
-                 "Dia terkejut dan melompat kecil. "
-                 "Ternyata itu bayangannya sendiri. "
-                 "Oyen akhirnya kembali bermain dengan tenang."
-    },
-    {
-        "id": "leaf",
-        "title": "Daun yang terbang",
-        "caption": "Oyen mengejar daun!",
-        "voice": "Sebuah daun jatuh di depan Oyen. "
-                 "Angin meniup daun itu menjauh. "
-                 "Oyen berlari kecil untuk mengejarnya. "
-                 "Saat daun berhenti, Oyen duduk dengan bangga."
-    },
+    ("butterfly", "Kupu-kupu misterius", [
+        ("Oyen melihat kupu-kupu cantik.", "Dia mengikutinya dengan penasaran."),
+        ("Seekor kupu-kupu hinggap di dekat Oyen.", "Oyen mendekat perlahan, lalu kupu-kupu itu terbang."),
+        ("Oyen mencoba mengejar kupu-kupu.", "Ternyata petualangan kecil bisa sangat menyenangkan."),
+        ("Kupu-kupu kuning terbang di depan Oyen.", "Oyen melompat kecil, tetapi kupu-kupu itu lolos.")
+    ]),
+    ("ball", "Bola merah", [
+        ("Oyen menemukan bola merah.", "Bola itu menggelinding dan membuatnya terkejut."),
+        ("Oyen menyentuh sebuah bola.", "Bola itu bergerak menjauh dan Oyen mengejarnya."),
+        ("Sebuah bola merah menarik perhatian Oyen.", "Dia mendorongnya lagi dan mulai bermain."),
+        ("Oyen ingin menangkap bola yang bergerak.", "Bola itu berhenti tepat di depan kakinya.")
+    ]),
+    ("fish", "Ikan yang lincah", [
+        ("Oyen melihat ikan berenang.", "Dia mengamati ikan itu dengan penuh rasa ingin tahu."),
+        ("Seekor ikan bergerak cepat di akuarium.", "Oyen mengikuti gerakannya dari luar."),
+        ("Oyen duduk memperhatikan ikan kecil.", "Gerakan ikan itu membuatnya terus penasaran."),
+        ("Ikan kecil berenang ke sisi akuarium.", "Oyen ikut berpindah untuk melihatnya.")
+    ]),
+    ("gift", "Kotak misterius", [
+        ("Oyen menemukan kotak kecil.", "Dia mengendusnya dan mencoba membuka tutupnya."),
+        ("Sebuah kotak menarik perhatian Oyen.", "Di dekatnya ada kejutan yang belum diketahui."),
+        ("Oyen mendorong kotak yang ada di lantai.", "Kotak itu bergeser dan membuatnya penasaran."),
+        ("Oyen mendekati sebuah kotak hadiah.", "Dia mengamatinya seolah sedang menemukan harta karun.")
+    ]),
+    ("bird", "Burung di dekat jendela", [
+        ("Seekor burung hinggap di dekat jendela.", "Oyen memperhatikannya dengan mata berbinar."),
+        ("Oyen melihat burung kecil mengepakkan sayap.", "Burung itu terbang dan Oyen terus memandangnya."),
+        ("Suara burung membuat Oyen menoleh.", "Dia mencari sumber suara itu dengan penasaran."),
+        ("Burung kecil datang sebentar.", "Oyen mendekat, tetapi burung itu segera terbang.")
+    ]),
+    ("hat", "Topi lucu", [
+        ("Oyen menemukan topi kecil.", "Topi itu membuatnya terlihat lucu."),
+        ("Sebuah topi berada di dekat Oyen.", "Dia mendekat dan mencoba mengendusnya."),
+        ("Oyen penasaran dengan topi berwarna merah.", "Dia menyentuhnya dan topi itu bergeser."),
+        ("Topi kecil menarik perhatian Oyen.", "Oyen mencoba mendekat dengan hati-hati.")
+    ]),
+    ("shadow", "Bayangan misterius", [
+        ("Oyen melihat bayangan bergerak.", "Dia terkejut, lalu menyadari bayangan itu miliknya."),
+        ("Ada bayangan di dinding.", "Oyen menoleh dan mencoba mencari tahu asalnya."),
+        ("Oyen bergerak dan bayangan ikut bergerak.", "Dia tampak bingung melihat kejadian itu."),
+        ("Bayangan besar muncul di dekat Oyen.", "Setelah mengamati, dia kembali tenang.")
+    ]),
+    ("leaf", "Daun yang terbang", [
+        ("Daun jatuh tepat di depan Oyen.", "Angin meniupnya dan Oyen mengikuti gerakannya."),
+        ("Oyen melihat daun bergerak di lantai.", "Dia mendekat dan mencoba menyentuhnya."),
+        ("Daun kecil tertiup angin.", "Oyen mengejarnya dengan langkah-langkah kecil."),
+        ("Oyen menemukan daun berwarna hijau.", "Daun itu bergeser dan membuatnya penasaran.")
+    ])
 ]
 
 def read_history():
@@ -94,51 +72,73 @@ def read_history():
         return []
 
 def choose_story(history):
-    previous = set(history[-3:])
-    choices = [s for s in STORIES if s["id"] not in previous]
-    return random.choice(choices or STORIES)
+    pool = []
+    for theme, title, variations in STORIES:
+        for number, pair in enumerate(variations):
+            story_id = f"{theme}-{number}"
+            pool.append({
+                "id": story_id,
+                "theme": theme,
+                "title": title,
+                "caption": pair[0],
+                "voice": pair[0] + " " + pair[1]
+            })
+
+    used = set(history)
+    available = [s for s in pool if s["id"] not in used]
+
+    # Jika semua variasi sudah terpakai, mulai siklus baru.
+    if not available:
+        available = pool
+
+    return random.choice(available)
 
 async def make_voice(text):
     voice = edge_tts.Communicate(text, "id-ID-GadisNeural")
-    await voice.save(str(ROOT / "oyen_voice.mp3"))
+    await voice.save(str(AUDIO))
 
 def main():
     history = read_history()
     story = choose_story(history)
 
-    print("Cerita hari ini:", story["title"])
+    print("Cerita:", story["title"])
+    print("Narasi:", story["voice"])
 
     env = os.environ.copy()
-    env["OYEN_STORY_ID"] = story["id"]
+    env["OYEN_STORY_ID"] = story["theme"]
     env["OYEN_STORY_TITLE"] = story["title"]
-    env["OYEN_STORY_CAPTION"] = story["caption"]
 
-    print("Merender adegan Blender 3D...")
+    print("Merender animasi 3D...")
     subprocess.run(
-        ["blender", "--background", "--python", str(ROOT / "blender_scene.py")],
+        ["blender", "--background", "--python",
+         str(ROOT / "blender_scene.py")],
         env=env,
         check=True,
-        timeout=720
+        timeout=1500
     )
 
-    print("Membuat suara bahasa Indonesia...")
+    if not SILENT_VIDEO.exists():
+        raise FileNotFoundError("Blender tidak menghasilkan video.")
+
+    print("Membuat suara Indonesia...")
     asyncio.run(make_voice(story["voice"]))
 
-    print("Menggabungkan video dan suara...")
+    print("Menggabungkan video, suara, dan teks...")
     subprocess.run([
         "ffmpeg", "-y",
-        "-i", "/tmp/oyen_silent.mp4",
-        "-i", str(ROOT / "oyen_voice.mp3"),
+        "-i", str(SILENT_VIDEO),
+        "-i", str(AUDIO),
         "-vf",
         "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:"
-        "text='" + story["caption"] + "':"
-        "fontcolor=white:fontsize=30:"
-        "box=1:boxcolor=black@0.7:boxborderw=14:"
-        "x=(w-text_w)/2:y=h-150",
+        "text='" + story["caption"].replace("'", r"\'") + "':"
+        "fontcolor=white:fontsize=28:"
+        "box=1:boxcolor=black@0.7:boxborderw=12:"
+        "x=(w-text_w)/2:y=h-150,"
+        "format=yuv420p",
         "-c:v", "libx264",
         "-preset", "ultrafast",
-        "-pix_fmt", "yuv420p",
         "-c:a", "aac",
+        "-b:a", "128k",
         "-shortest",
         "-movflags", "+faststart",
         str(OUTPUT)
@@ -146,7 +146,7 @@ def main():
 
     history.append(story["id"])
     HISTORY.write_text(
-        json.dumps(history[-50:], ensure_ascii=False, indent=2),
+        json.dumps(history[-32:], ensure_ascii=False, indent=2),
         encoding="utf-8"
     )
 
@@ -154,4 +154,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-        
