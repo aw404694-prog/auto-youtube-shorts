@@ -1,0 +1,4 @@
+requests
+Pillow
+edge-tts
+moviepy==2.2.1
