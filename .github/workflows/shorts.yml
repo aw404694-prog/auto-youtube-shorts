@@ -36,4 +36,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: generated-short
-          path: output/short.mp4
+          path: oyen_shorts.mp4
+          if-no-files-found: error
+          
