@@ -15,37 +15,36 @@ concurrency:
 
 jobs:
   create-video:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
-      - name: Install Blender and FFmpeg
+      - name: Install Blender, FFmpeg and fonts
         run: |
           sudo apt-get update
           sudo apt-get install -y blender ffmpeg fonts-dejavu-core
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
 
       - name: Generate Oyen Short
         run: python main.py
 
-      - name: Save generated video
-        uses: actions/upload-artifact@v4
+      - name: Upload video
+        uses: actions/upload-artifact@v7
         with:
           name: oyen-shorts-video
           path: oyen_shorts.mp4
           if-no-files-found: error
+          retention-days: 7
 
       - name: Save story history
         run: |
