@@ -1,58 +1,59 @@
-
-name: Auto Shorts
+name: Generate Oyen Shorts
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 12 * * *"
+workflow_dispatch:
+schedule:
+- cron: "0 12 * * *"
 
 permissions:
-  contents: write
-
-concurrency:
-  group: auto-shorts
-  cancel-in-progress: false
+contents: write
 
 jobs:
-  create-video:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+generate:
+runs-on: ubuntu-24.04
+timeout-minutes: 40
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.11"
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: "3.11"
 
-      - name: Install Blender, FFmpeg and fonts
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y blender ffmpeg fonts-dejavu-core
+  - name: Install system dependencies
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y blender ffmpeg fonts-dejavu-core
 
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
+  - name: Install Python dependencies
+    run: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
 
-      - name: Generate Oyen Short
-        run: python main.py
+  - name: Generate Oyen Shorts
+    run: |
+      blender --version
+      ffmpeg -version
+      python -u main.py
 
-      - name: Upload video
-        uses: actions/upload-artifact@v7
-        with:
-          name: oyen-shorts-video
-          path: oyen_shorts.mp4
-          if-no-files-found: error
-          retention-days: 7
+  - name: Upload generated video
+    if: success()
+    uses: actions/upload-artifact@v4
+    with:
+      name: oyen-shorts
+      path: oyen_shorts.mp4
+      if-no-files-found: error
+      retention-days: 7
 
-      - name: Save story history
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add story_history.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Update Oyen story history"
-            git push
-          fi
-          
+  - name: Save story history
+    if: success()
+    run: |
+      git config user.name "github-actions[bot]"
+      git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      git add story_history.json
+      if ! git diff --cached --quiet; then
+        git commit -m "Update Oyen story history"
+        git push
+      fi
