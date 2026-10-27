@@ -1,3 +1,4 @@
+
 name: Auto Shorts
 
 on:
@@ -5,9 +6,11 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "0 1 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -21,20 +24,26 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install FFmpeg and Blender
+      - name: Install FFmpeg and fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg blender
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Generate Shorts
+      - name: Generate and upload Shorts
         run: python main.py
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_PRIVACY_STATUS: unlisted
 
-      - name: Upload generated video as artifact
+      - name: Save video artifact
         uses: actions/upload-artifact@v4
         with:
           name: youtube-shorts
-          path: output/
+          path: output/fakta_unik.mp4
           if-no-files-found: error
+          
