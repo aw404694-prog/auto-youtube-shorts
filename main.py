@@ -1,156 +1,222 @@
 
-import asyncio
-import json
 import os
 import random
+import asyncio
+import textwrap
 import subprocess
 from pathlib import Path
 
 import edge_tts
+from PIL import Image, ImageDraw, ImageFont
 
-ROOT = Path(__file__).resolve().parent
-HISTORY = ROOT / "story_history.json"
-OUTPUT = ROOT / "oyen_shorts.mp4"
-AUDIO = ROOT / "oyen_voice.mp3"
-SILENT_VIDEO = Path("/tmp/oyen_silent.mp4")
+OUTPUT = Path("output")
+OUTPUT.mkdir(exist_ok=True)
 
-STORIES = [
-    ("butterfly", "Kupu-kupu misterius", [
-        ("Oyen melihat kupu-kupu cantik.", "Dia mengikutinya dengan penasaran."),
-        ("Seekor kupu-kupu hinggap di dekat Oyen.", "Oyen mendekat perlahan, lalu kupu-kupu itu terbang."),
-        ("Oyen mencoba mengejar kupu-kupu.", "Ternyata petualangan kecil bisa sangat menyenangkan."),
-        ("Kupu-kupu kuning terbang di depan Oyen.", "Oyen melompat kecil, tetapi kupu-kupu itu lolos.")
-    ]),
-    ("ball", "Bola merah", [
-        ("Oyen menemukan bola merah.", "Bola itu menggelinding dan membuatnya terkejut."),
-        ("Oyen menyentuh sebuah bola.", "Bola itu bergerak menjauh dan Oyen mengejarnya."),
-        ("Sebuah bola merah menarik perhatian Oyen.", "Dia mendorongnya lagi dan mulai bermain."),
-        ("Oyen ingin menangkap bola yang bergerak.", "Bola itu berhenti tepat di depan kakinya.")
-    ]),
-    ("fish", "Ikan yang lincah", [
-        ("Oyen melihat ikan berenang.", "Dia mengamati ikan itu dengan penuh rasa ingin tahu."),
-        ("Seekor ikan bergerak cepat di akuarium.", "Oyen mengikuti gerakannya dari luar."),
-        ("Oyen duduk memperhatikan ikan kecil.", "Gerakan ikan itu membuatnya terus penasaran."),
-        ("Ikan kecil berenang ke sisi akuarium.", "Oyen ikut berpindah untuk melihatnya.")
-    ]),
-    ("gift", "Kotak misterius", [
-        ("Oyen menemukan kotak kecil.", "Dia mengendusnya dan mencoba membuka tutupnya."),
-        ("Sebuah kotak menarik perhatian Oyen.", "Di dekatnya ada kejutan yang belum diketahui."),
-        ("Oyen mendorong kotak yang ada di lantai.", "Kotak itu bergeser dan membuatnya penasaran."),
-        ("Oyen mendekati sebuah kotak hadiah.", "Dia mengamatinya seolah sedang menemukan harta karun.")
-    ]),
-    ("bird", "Burung di dekat jendela", [
-        ("Seekor burung hinggap di dekat jendela.", "Oyen memperhatikannya dengan mata berbinar."),
-        ("Oyen melihat burung kecil mengepakkan sayap.", "Burung itu terbang dan Oyen terus memandangnya."),
-        ("Suara burung membuat Oyen menoleh.", "Dia mencari sumber suara itu dengan penasaran."),
-        ("Burung kecil datang sebentar.", "Oyen mendekat, tetapi burung itu segera terbang.")
-    ]),
-    ("hat", "Topi lucu", [
-        ("Oyen menemukan topi kecil.", "Topi itu membuatnya terlihat lucu."),
-        ("Sebuah topi berada di dekat Oyen.", "Dia mendekat dan mencoba mengendusnya."),
-        ("Oyen penasaran dengan topi berwarna merah.", "Dia menyentuhnya dan topi itu bergeser."),
-        ("Topi kecil menarik perhatian Oyen.", "Oyen mencoba mendekat dengan hati-hati.")
-    ]),
-    ("shadow", "Bayangan misterius", [
-        ("Oyen melihat bayangan bergerak.", "Dia terkejut, lalu menyadari bayangan itu miliknya."),
-        ("Ada bayangan di dinding.", "Oyen menoleh dan mencoba mencari tahu asalnya."),
-        ("Oyen bergerak dan bayangan ikut bergerak.", "Dia tampak bingung melihat kejadian itu."),
-        ("Bayangan besar muncul di dekat Oyen.", "Setelah mengamati, dia kembali tenang.")
-    ]),
-    ("leaf", "Daun yang terbang", [
-        ("Daun jatuh tepat di depan Oyen.", "Angin meniupnya dan Oyen mengikuti gerakannya."),
-        ("Oyen melihat daun bergerak di lantai.", "Dia mendekat dan mencoba menyentuhnya."),
-        ("Daun kecil tertiup angin.", "Oyen mengejarnya dengan langkah-langkah kecil."),
-        ("Oyen menemukan daun berwarna hijau.", "Daun itu bergeser dan membuatnya penasaran.")
-    ])
+FACTS = [
+    {
+        "title": "Fakta unik tentang gurita",
+        "text": "Gurita memiliki tiga jantung. Dua memompa darah ke insang, dan satu memompa darah ke seluruh tubuh.",
+    },
+    {
+        "title": "Fakta unik tentang luar angkasa",
+        "text": "Di Venus, satu hari lebih lama daripada satu tahunnya. Venus berputar sangat lambat pada porosnya.",
+    },
+    {
+        "title": "Fakta unik tentang lebah",
+        "text": "Lebah madu berkomunikasi dengan gerakan tarian untuk memberi tahu lebah lain lokasi sumber makanan.",
+    },
+    {
+        "title": "Fakta unik tentang hiu",
+        "text": "Hiu sudah hidup di Bumi jauh sebelum dinosaurus muncul.",
+    },
+    {
+        "title": "Fakta unik tentang jerapah",
+        "text": "Pola bercak pada setiap jerapah memiliki bentuk yang unik, seperti pola sidik jari.",
+    },
 ]
 
-def read_history():
-    try:
-        return json.loads(HISTORY.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
+VOICE = "id-ID-ArdiNeural"
 
-def choose_story(history):
-    pool = []
-    for theme, title, variations in STORIES:
-        for number, pair in enumerate(variations):
-            story_id = f"{theme}-{number}"
-            pool.append({
-                "id": story_id,
-                "theme": theme,
-                "title": title,
-                "caption": pair[0],
-                "voice": pair[0] + " " + pair[1]
-            })
 
-    used = set(history)
-    available = [s for s in pool if s["id"] not in used]
+def create_image(fact, image_path):
+    image = Image.new("RGB", (720, 1280), (12, 24, 52))
+    draw = ImageDraw.Draw(image)
 
-    # Jika semua variasi sudah terpakai, mulai siklus baru.
-    if not available:
-        available = pool
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    bold_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
-    return random.choice(available)
+    title_font = ImageFont.truetype(bold_path, 44)
+    body_font = ImageFont.truetype(font_path, 34)
+    footer_font = ImageFont.truetype(bold_path, 25)
 
-async def make_voice(text):
-    voice = edge_tts.Communicate(text, "id-ID-GadisNeural")
-    await voice.save(str(AUDIO))
-
-def main():
-    history = read_history()
-    story = choose_story(history)
-
-    print("Cerita:", story["title"])
-    print("Narasi:", story["voice"])
-
-    env = os.environ.copy()
-    env["OYEN_STORY_ID"] = story["theme"]
-    env["OYEN_STORY_TITLE"] = story["title"]
-
-    print("Merender animasi 3D...")
-    subprocess.run(
-        ["blender", "--background", "--python",
-         str(ROOT / "blender_scene.py")],
-        env=env,
-        check=True,
-        timeout=1500
+    draw.rounded_rectangle(
+        (35, 180, 685, 1100),
+        radius=35,
+        fill=(25, 43, 79),
+        outline=(90, 180, 255),
+        width=3,
     )
 
-    if not SILENT_VIDEO.exists():
-        raise FileNotFoundError("Blender tidak menghasilkan video.")
+    draw.text(
+        (65, 235),
+        "FAKTA UNIK",
+        font=footer_font,
+        fill=(90, 220, 255),
+    )
 
-    print("Membuat suara Indonesia...")
-    asyncio.run(make_voice(story["voice"]))
+    title_lines = textwrap.wrap(fact["title"], width=23)
+    y = 320
+    for line in title_lines:
+        draw.text((65, y), line, font=title_font, fill="white")
+        y += 62
 
-    print("Menggabungkan video, suara, dan teks...")
-    subprocess.run([
+    y += 45
+    words = fact["text"].split()
+    lines = []
+    current = ""
+
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if draw.textbbox((0, 0), candidate, font=body_font)[2] > 560:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+
+    if current:
+        lines.append(current)
+
+    for line in lines:
+        draw.text((65, y), line, font=body_font, fill=(225, 235, 250))
+        y += 52
+
+    draw.text(
+        (65, 1015),
+        "TAMBAH WAWASANMU!",
+        font=footer_font,
+        fill=(255, 210, 80),
+    )
+
+    image.save(image_path)
+
+
+async def create_voice(text, audio_path):
+    communicate = edge_tts.Communicate(
+        text=text,
+        voice=VOICE,
+        rate="+0%",
+    )
+    await communicate.save(str(audio_path))
+
+
+def create_video(image_path, audio_path, video_path):
+    command = [
         "ffmpeg", "-y",
-        "-i", str(SILENT_VIDEO),
-        "-i", str(AUDIO),
-        "-vf",
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:"
-        "text='" + story["caption"].replace("'", r"\'") + "':"
-        "fontcolor=white:fontsize=28:"
-        "box=1:boxcolor=black@0.7:boxborderw=12:"
-        "x=(w-text_w)/2:y=h-150,"
-        "format=yuv420p",
+        "-loop", "1",
+        "-i", str(image_path),
+        "-i", str(audio_path),
+        "-vf", "scale=720:1280,format=yuv420p",
         "-c:v", "libx264",
-        "-preset", "ultrafast",
+        "-tune", "stillimage",
         "-c:a", "aac",
         "-b:a", "128k",
         "-shortest",
         "-movflags", "+faststart",
-        str(OUTPUT)
-    ], check=True)
+        str(video_path),
+    ]
 
-    history.append(story["id"])
-    HISTORY.write_text(
-        json.dumps(history[-32:], ensure_ascii=False, indent=2),
-        encoding="utf-8"
+    subprocess.run(command, check=True)
+
+    if not video_path.exists() or video_path.stat().st_size == 0:
+        raise RuntimeError("Video tidak berhasil dibuat.")
+
+
+def upload_to_youtube(video_path, title, description):
+    client_id = os.getenv("YT_CLIENT_ID")
+    client_secret = os.getenv("YT_CLIENT_SECRET")
+    refresh_token = os.getenv("YT_REFRESH_TOKEN")
+
+    if not all([client_id, client_secret, refresh_token]):
+        print("Upload dilewati: Secret YouTube API belum lengkap.")
+        return
+
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+
+    credentials = Credentials(
+        token=None,
+        refresh_token=refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=client_id,
+        client_secret=client_secret,
+        scopes=["https://www.googleapis.com/auth/youtube.upload"],
+    )
+    credentials.refresh(Request())
+
+    youtube = build(
+        "youtube", "v3",
+        credentials=credentials,
+        cache_discovery=False,
     )
 
-    print("VIDEO SELESAI:", OUTPUT)
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body={
+            "snippet": {
+                "title": title[:100],
+                "description": description,
+                "tags": ["fakta unik", "shorts", "pengetahuan"],
+                "categoryId": "27",
+            },
+            "status": {
+                "privacyStatus": os.getenv(
+                    "YT_PRIVACY_STATUS", "unlisted"
+                ),
+                "selfDeclaredMadeForKids": False,
+            },
+        },
+        media_body=MediaFileUpload(
+            str(video_path),
+            mimetype="video/mp4",
+            resumable=True,
+        ),
+    )
+
+    result = request.execute()
+    print("Upload berhasil:", result["id"])
+    print("Link: https://www.youtube.com/watch?v=" + result["id"])
+
+
+def main():
+    fact = random.choice(FACTS)
+    title = fact["title"] + " #Shorts"
+
+    image_path = OUTPUT / "background.jpg"
+    audio_path = OUTPUT / "narration.mp3"
+    video_path = OUTPUT / "fakta_unik.mp4"
+
+    narration = fact["title"] + ". " + fact["text"]
+
+    print("Membuat gambar...")
+    create_image(fact, image_path)
+
+    print("Membuat narasi...")
+    asyncio.run(create_voice(narration, audio_path))
+
+    print("Membuat video...")
+    create_video(image_path, audio_path, video_path)
+
+    print("Video berhasil dibuat:", video_path)
+
+    description = (
+        fact["text"]
+        + "\n\n#Shorts #FaktaUnik #Pengetahuan"
+    )
+    upload_to_youtube(video_path, title, description)
+
 
 if __name__ == "__main__":
     main()
+    
