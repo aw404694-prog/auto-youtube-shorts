@@ -22,9 +22,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install FFmpeg and Blender
-  run: |
-    sudo apt-get update
-    sudo apt-get install -y ffmpeg blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg blender
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -37,4 +38,3 @@ jobs:
           name: youtube-shorts
           path: output/
           if-no-files-found: error
-          
